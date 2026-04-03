@@ -48,7 +48,7 @@ function AppContent() {
 
   return (
     <Router>
-      <div className="flex min-h-screen bg-gray-50 font-sans">
+      <div className="flex min-h-screen bg-[#e8edf3] font-sans">
         <Sidebar isOpen={sidebarOpen} role={role} />
         <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
           <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
