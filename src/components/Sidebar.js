@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useSettings } from '../context/SettingsContext';
 
 const navConfig = {
   developer: [
@@ -8,6 +9,7 @@ const navConfig = {
     { path: '/guards', label: 'Guards', icon: '&#128694;' },
     { path: '/schedule', label: 'Schedule', icon: '&#128197;' },
     { path: '/reports', label: 'Reports', icon: '&#128202;' },
+    { path: '/settings', label: 'Settings', icon: '&#9881;' },
   ],
   company: [
     { path: '/', label: 'Dashboard', icon: '&#128200;' },
@@ -39,14 +41,29 @@ const roleLabels = {
 
 function Sidebar({ isOpen, role }) {
   const location = useLocation();
+  const { settings } = useSettings();
   const navItems = navConfig[role] || navConfig.guard;
   const roleLabel = roleLabels[role] || 'Portal';
 
   return (
-    <div className={`sidebar ${isOpen ? '' : 'closed'}`}>
+    <div
+      className={`sidebar ${isOpen ? '' : 'closed'}`}
+      style={{
+        background: `linear-gradient(180deg, var(--primary-color, #1a1a2e) 0%, var(--secondary-color, #16213e) 100%)`,
+      }}
+    >
       <div className="sidebar-header">
         <h2>
-          <span>&#128737;</span> SecureGuard
+          {settings.company_logo_url ? (
+            <img
+              src={settings.company_logo_url}
+              alt="Logo"
+              className="sidebar-logo"
+            />
+          ) : (
+            <span>&#128737;</span>
+          )}
+          {settings.company_name || 'SecureGuard'}
         </h2>
         <span className={`sidebar-role-badge ${role}`}>{roleLabel}</span>
       </div>

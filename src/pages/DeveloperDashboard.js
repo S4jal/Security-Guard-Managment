@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useSettings } from '../context/SettingsContext';
 
 function DeveloperDashboard() {
+  const { settings } = useSettings();
   const [userCounts, setUserCounts] = useState({
     total: 0,
     developers: 0,
@@ -54,11 +57,57 @@ function DeveloperDashboard() {
     { name: 'Network I/O', value: 12, color: 'green' },
   ];
 
+  const smtpConfigured = settings.smtp_host && settings.smtp_user;
+
   return (
     <div className="dashboard developer-dashboard">
       <div className="dashboard-header">
         <h1>Developer Dashboard</h1>
         <span className="role-tag developer">System Admin</span>
+      </div>
+
+      {/* Quick Settings Cards */}
+      <div className="quick-settings-grid">
+        <Link to="/settings" className="quick-setting-card">
+          <div className="qs-icon" style={{ background: '#e3f2fd' }}>&#127970;</div>
+          <div className="qs-info">
+            <h4>Company</h4>
+            <p>{settings.company_name}</p>
+          </div>
+          <span className="qs-arrow">&#8250;</span>
+        </Link>
+        <Link to="/settings" className="quick-setting-card">
+          <div className="qs-icon" style={{ background: '#f3e5f5' }}>&#127912;</div>
+          <div className="qs-info">
+            <h4>Theme</h4>
+            <div className="qs-colors">
+              <span className="qs-color-dot" style={{ background: settings.primary_color }} />
+              <span className="qs-color-dot" style={{ background: settings.accent_color }} />
+              <span className="qs-color-dot" style={{ background: settings.button_color }} />
+            </div>
+          </div>
+          <span className="qs-arrow">&#8250;</span>
+        </Link>
+        <Link to="/settings" className="quick-setting-card">
+          <div className="qs-icon" style={{ background: smtpConfigured ? '#e8f5e9' : '#fff3e0' }}>
+            &#128231;
+          </div>
+          <div className="qs-info">
+            <h4>SMTP</h4>
+            <p className={smtpConfigured ? 'configured' : 'not-configured'}>
+              {smtpConfigured ? `${settings.smtp_host}` : 'Not configured'}
+            </p>
+          </div>
+          <span className="qs-arrow">&#8250;</span>
+        </Link>
+        <Link to="/users" className="quick-setting-card">
+          <div className="qs-icon" style={{ background: '#e8f5e9' }}>&#128101;</div>
+          <div className="qs-info">
+            <h4>Users</h4>
+            <p>{userCounts.total} registered</p>
+          </div>
+          <span className="qs-arrow">&#8250;</span>
+        </Link>
       </div>
 
       <div className="stats-grid">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import Login from './pages/Login';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
@@ -14,6 +15,7 @@ import Clients from './pages/Clients';
 import Incidents from './pages/Incidents';
 import PatrolLog from './pages/PatrolLog';
 import Attendance from './pages/Attendance';
+import Settings from './pages/Settings';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import './App.css';
@@ -60,20 +62,18 @@ function AppContent() {
           />
           <div className="page-content">
             <Routes>
-              {/* Dashboard - role based */}
               <Route path="/" element={getDashboardByRole(role)} />
 
-              {/* Developer routes */}
               {role === 'developer' && (
                 <>
                   <Route path="/users" element={<Users />} />
                   <Route path="/guards" element={<Guards />} />
                   <Route path="/schedule" element={<Schedule />} />
                   <Route path="/reports" element={<Reports />} />
+                  <Route path="/settings" element={<Settings />} />
                 </>
               )}
 
-              {/* Company routes */}
               {role === 'company' && (
                 <>
                   <Route path="/guards" element={<Guards />} />
@@ -83,7 +83,6 @@ function AppContent() {
                 </>
               )}
 
-              {/* Client routes */}
               {role === 'client' && (
                 <>
                   <Route path="/my-guards" element={<Guards />} />
@@ -92,7 +91,6 @@ function AppContent() {
                 </>
               )}
 
-              {/* Guard routes */}
               {(role === 'guard' || !role) && (
                 <>
                   <Route path="/my-schedule" element={<Schedule />} />
@@ -113,7 +111,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SettingsProvider>
+        <AppContent />
+      </SettingsProvider>
     </AuthProvider>
   );
 }

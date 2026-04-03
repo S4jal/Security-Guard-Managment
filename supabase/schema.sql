@@ -16,24 +16,44 @@ create table if not exists public.profiles (
   updated_at timestamptz default now()
 );
 
--- 2. Enable Row Level Security
+-- 2. Create app_settings table (single row for global config)
+create table if not exists public.app_settings (
+  id int primary key default 1 check (id = 1),
+  company_name text default 'SecureGuard Pro',
+  company_logo_url text default '',
+  primary_color text default '#1a1a2e',
+  secondary_color text default '#16213e',
+  accent_color text default '#4fc3f7',
+  button_color text default '#302b63',
+  smtp_host text default '',
+  smtp_port int default 587,
+  smtp_user text default '',
+  smtp_password text default '',
+  smtp_from_email text default '',
+  smtp_from_name text default '',
+  smtp_secure boolean default true,
+  updated_at timestamptz default now()
+);
+
+-- Insert default settings row
+insert into public.app_settings (id) values (1) on conflict (id) do nothing;
+
+-- 3. Enable Row Level Security
 alter table public.profiles enable row level security;
+alter table public.app_settings enable row level security;
 
--- 3. RLS Policies
+-- 4. RLS Policies - Profiles
 
--- Everyone can read all profiles (needed for guard lists, etc.)
 create policy "Profiles are viewable by authenticated users"
   on public.profiles for select
   to authenticated
   using (true);
 
--- Users can update their own profile
 create policy "Users can update their own profile"
   on public.profiles for update
   to authenticated
   using (auth.uid() = id);
 
--- Developers can insert profiles (for user management)
 create policy "Developers can insert profiles"
   on public.profiles for insert
   to authenticated
@@ -44,7 +64,6 @@ create policy "Developers can insert profiles"
     )
   );
 
--- Developers can delete profiles
 create policy "Developers can delete profiles"
   on public.profiles for delete
   to authenticated
@@ -55,7 +74,36 @@ create policy "Developers can delete profiles"
     )
   );
 
--- 4. Auto-create profile on signup
+-- 5. RLS Policies - App Settings
+
+-- Everyone can read settings (needed for theme, company name on login)
+create policy "App settings are viewable by everyone"
+  on public.app_settings for select
+  using (true);
+
+-- Only developers can update settings
+create policy "Developers can update app settings"
+  on public.app_settings for update
+  to authenticated
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'developer'
+    )
+  );
+
+-- Allow upsert for developers
+create policy "Developers can insert app settings"
+  on public.app_settings for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'developer'
+    )
+  );
+
+-- 6. Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -73,13 +121,12 @@ begin
 end;
 $$;
 
--- Drop trigger if exists, then create
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 5. Auto-update updated_at
+-- 7. Auto-update updated_at
 create or replace function public.handle_updated_at()
 returns trigger
 language plpgsql
@@ -95,22 +142,28 @@ create trigger on_profile_updated
   before update on public.profiles
   for each row execute function public.handle_updated_at();
 
+drop trigger if exists on_settings_updated on public.app_settings;
+create trigger on_settings_updated
+  before update on public.app_settings
+  for each row execute function public.handle_updated_at();
+
 -- ============================================
--- SEED DATA: Create test users
--- After running this schema, create users in
--- Supabase Auth Dashboard with these emails:
+-- SETUP INSTRUCTIONS:
 --
--- 1. developer@secureguard.com (role: developer)
--- 2. company@secureguard.com   (role: company)
--- 3. client@secureguard.com    (role: client)
--- 4. guard@secureguard.com     (role: guard)
+-- 1. Run this entire SQL in Supabase SQL Editor
 --
--- Use any password (e.g., "password123")
--- The trigger will auto-create profiles.
+-- 2. Create a Storage bucket called "logos":
+--    Storage > New Bucket > Name: logos > Public: ON
 --
--- Then update their roles manually:
--- UPDATE profiles SET role = 'developer' WHERE email = 'developer@secureguard.com';
--- UPDATE profiles SET role = 'company' WHERE email = 'company@secureguard.com';
--- UPDATE profiles SET role = 'client' WHERE email = 'client@secureguard.com';
--- UPDATE profiles SET role = 'guard' WHERE email = 'guard@secureguard.com';
+-- 3. Create test users in Auth > Users:
+--    - developer@secureguard.com (password123)
+--    - company@secureguard.com   (password123)
+--    - client@secureguard.com    (password123)
+--    - guard@secureguard.com     (password123)
+--
+-- 4. Update roles:
+--    UPDATE profiles SET role = 'developer' WHERE email = 'developer@secureguard.com';
+--    UPDATE profiles SET role = 'company' WHERE email = 'company@secureguard.com';
+--    UPDATE profiles SET role = 'client' WHERE email = 'client@secureguard.com';
+--    UPDATE profiles SET role = 'guard' WHERE email = 'guard@secureguard.com';
 -- ============================================

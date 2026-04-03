@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -7,6 +8,7 @@ function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const { settings } = useSettings();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,10 +34,19 @@ function Login() {
   };
 
   return (
-    <div className="login-container">
+    <div
+      className="login-container"
+      style={{
+        background: `linear-gradient(135deg, ${settings.primary_color || '#0f0c29'}, ${settings.button_color || '#302b63'}, ${settings.secondary_color || '#24243e'})`,
+      }}
+    >
       <div className="login-left">
-        <div className="shield-icon">&#128737;</div>
-        <h1>SecureGuard Pro</h1>
+        {settings.company_logo_url ? (
+          <img src={settings.company_logo_url} alt="Logo" className="login-logo" />
+        ) : (
+          <div className="shield-icon">&#128737;</div>
+        )}
+        <h1>{settings.company_name || 'SecureGuard Pro'}</h1>
         <p>
           Complete security guard management system. Track guards, manage schedules,
           and monitor operations from a single dashboard.
@@ -87,7 +98,14 @@ function Login() {
                 disabled={isLoading}
               />
             </div>
-            <button type="submit" className="login-btn" disabled={isLoading}>
+            <button
+              type="submit"
+              className="login-btn"
+              disabled={isLoading}
+              style={{
+                background: `linear-gradient(135deg, ${settings.button_color || '#302b63'}, ${settings.primary_color || '#24243e'})`,
+              }}
+            >
               {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>

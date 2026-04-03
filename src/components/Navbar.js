@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 const roleColors = {
   developer: '#e91e63',
@@ -10,6 +11,7 @@ const roleColors = {
 
 function Navbar({ onToggleSidebar }) {
   const { profile, role, logout } = useAuth();
+  const { settings } = useSettings();
   const userName = profile?.full_name || 'User';
   const color = roleColors[role] || '#302b63';
 
@@ -28,7 +30,7 @@ function Navbar({ onToggleSidebar }) {
           &#9776;
         </button>
         <span style={{ fontSize: '0.9rem', color: '#666' }}>
-          Security Guard Management System
+          {settings.company_name || 'Security Guard Management System'}
         </span>
       </div>
       <div className="navbar-right">
