@@ -1,7 +1,25 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
-function Navbar({ onToggleSidebar, onLogout }) {
-  const userName = localStorage.getItem('userName') || 'Admin';
+const roleColors = {
+  developer: '#e91e63',
+  company: '#2196f3',
+  client: '#ff9800',
+  guard: '#4caf50',
+};
+
+function Navbar({ onToggleSidebar }) {
+  const { profile, role, logout } = useAuth();
+  const userName = profile?.full_name || 'User';
+  const color = roleColors[role] || '#302b63';
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
 
   return (
     <div className="navbar">
@@ -15,12 +33,15 @@ function Navbar({ onToggleSidebar, onLogout }) {
       </div>
       <div className="navbar-right">
         <div className="user-info">
-          <div className="user-avatar">
+          <div className="user-avatar" style={{ background: color }}>
             {userName.charAt(0).toUpperCase()}
           </div>
-          <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{userName}</span>
+          <div className="user-details">
+            <span className="user-name">{userName}</span>
+            <span className={`user-role-badge ${role}`}>{role}</span>
+          </div>
         </div>
-        <button className="logout-btn" onClick={onLogout}>
+        <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>
       </div>
