@@ -12,47 +12,33 @@ function Guards() {
     { id: 'SG-008', name: 'Alamgir Kabir', phone: '01918-901234', zone: 'Gate C', status: 'on-duty', joinDate: '2022-05-20' },
   ];
 
-  const getInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('');
-  };
+  const badge = { 'on-duty': 'bg-emerald-50 text-emerald-600', 'off-duty': 'bg-gray-100 text-gray-500', 'on-leave': 'bg-amber-50 text-amber-600' };
 
   return (
-    <div className="guards-page">
-      <div className="page-header">
-        <h1>Security Guards</h1>
-        <button className="add-btn">+ Add New Guard</button>
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-gray-800">Security Guards</h1>
+        <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">+ Add Guard</button>
       </div>
-
-      <div className="guards-table">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Assigned Zone</th>
-              <th>Status</th>
-              <th>Join Date</th>
-            </tr>
-          </thead>
+      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead><tr className="text-left text-xs text-gray-400 uppercase tracking-wider">
+            <th className="px-5 py-4">ID</th><th className="px-5 py-4">Name</th><th className="px-5 py-4">Phone</th><th className="px-5 py-4">Zone</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Joined</th>
+          </tr></thead>
           <tbody>
-            {guards.map((guard) => (
-              <tr key={guard.id}>
-                <td>{guard.id}</td>
-                <td>
-                  <div className="guard-name-cell">
-                    <div className="guard-avatar">{getInitials(guard.name)}</div>
-                    {guard.name}
+            {guards.map(g => (
+              <tr key={g.id} className="border-t border-gray-50 hover:bg-gray-50 transition">
+                <td className="px-5 py-3.5 text-gray-400 font-mono text-xs">{g.id}</td>
+                <td className="px-5 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">{g.name.split(' ').map(n => n[0]).join('')}</div>
+                    <span className="font-medium text-gray-700">{g.name}</span>
                   </div>
                 </td>
-                <td>{guard.phone}</td>
-                <td>{guard.zone}</td>
-                <td>
-                  <span className={`status-badge ${guard.status}`}>
-                    {guard.status.replace('-', ' ')}
-                  </span>
-                </td>
-                <td>{guard.joinDate}</td>
+                <td className="px-5 py-3.5 text-gray-500">{g.phone}</td>
+                <td className="px-5 py-3.5 text-gray-500">{g.zone}</td>
+                <td className="px-5 py-3.5"><span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${badge[g.status]}`}>{g.status.replace('-', ' ')}</span></td>
+                <td className="px-5 py-3.5 text-gray-400">{g.joinDate}</td>
               </tr>
             ))}
           </tbody>

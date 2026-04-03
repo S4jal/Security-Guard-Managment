@@ -22,16 +22,11 @@ import './App.css';
 
 function getDashboardByRole(role) {
   switch (role) {
-    case 'developer':
-      return <DeveloperDashboard />;
-    case 'company':
-      return <CompanyDashboard />;
-    case 'client':
-      return <ClientDashboard />;
-    case 'guard':
-      return <GuardDashboard />;
-    default:
-      return <GuardDashboard />;
+    case 'developer': return <DeveloperDashboard />;
+    case 'company': return <CompanyDashboard />;
+    case 'client': return <ClientDashboard />;
+    case 'guard': return <GuardDashboard />;
+    default: return <GuardDashboard />;
   }
 }
 
@@ -41,29 +36,24 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-        <p>Loading SecureGuard Pro...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 gap-4">
+        <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin-slow" />
+        <p className="text-gray-400 text-sm">Loading SecureGuard Pro...</p>
       </div>
     );
   }
 
-  if (!user) {
-    return <Login />;
-  }
+  if (!user) return <Login />;
 
   return (
     <Router>
-      <div className="app">
+      <div className="flex min-h-screen bg-gray-50 font-sans">
         <Sidebar isOpen={sidebarOpen} role={role} />
-        <div className={`main-content ${sidebarOpen ? '' : 'expanded'}`}>
-          <Navbar
-            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          />
-          <div className="page-content">
+        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+          <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          <div className="p-6">
             <Routes>
               <Route path="/" element={getDashboardByRole(role)} />
-
               {role === 'developer' && (
                 <>
                   <Route path="/users" element={<Users />} />
@@ -73,7 +63,6 @@ function AppContent() {
                   <Route path="/settings" element={<Settings />} />
                 </>
               )}
-
               {role === 'company' && (
                 <>
                   <Route path="/guards" element={<Guards />} />
@@ -82,7 +71,6 @@ function AppContent() {
                   <Route path="/reports" element={<Reports />} />
                 </>
               )}
-
               {role === 'client' && (
                 <>
                   <Route path="/my-guards" element={<Guards />} />
@@ -90,7 +78,6 @@ function AppContent() {
                   <Route path="/reports" element={<Reports />} />
                 </>
               )}
-
               {(role === 'guard' || !role) && (
                 <>
                   <Route path="/my-schedule" element={<Schedule />} />
@@ -98,7 +85,6 @@ function AppContent() {
                   <Route path="/attendance" element={<Attendance />} />
                 </>
               )}
-
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>

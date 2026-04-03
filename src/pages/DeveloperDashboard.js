@@ -5,181 +5,138 @@ import { useSettings } from '../context/SettingsContext';
 
 function DeveloperDashboard() {
   const { settings } = useSettings();
-  const [userCounts, setUserCounts] = useState({
-    total: 0,
-    developers: 0,
-    companies: 0,
-    clients: 0,
-    guards: 0,
-  });
+  const [userCounts, setUserCounts] = useState({ total: 0, developers: 0, companies: 0, clients: 0, guards: 0 });
 
   useEffect(() => {
-    fetchUserCounts();
+    (async () => {
+      try {
+        const { data } = await supabase.from('profiles').select('role');
+        if (data) setUserCounts({
+          total: data.length,
+          developers: data.filter(u => u.role === 'developer').length,
+          companies: data.filter(u => u.role === 'company').length,
+          clients: data.filter(u => u.role === 'client').length,
+          guards: data.filter(u => u.role === 'guard').length,
+        });
+      } catch (e) {}
+    })();
   }, []);
 
-  async function fetchUserCounts() {
-    try {
-      const { data } = await supabase.from('profiles').select('role');
-      if (data) {
-        setUserCounts({
-          total: data.length,
-          developers: data.filter((u) => u.role === 'developer').length,
-          companies: data.filter((u) => u.role === 'company').length,
-          clients: data.filter((u) => u.role === 'client').length,
-          guards: data.filter((u) => u.role === 'guard').length,
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching users:', err);
-    }
-  }
-
-  const systemStats = [
-    { label: 'Total Users', value: userCounts.total || '0', icon: '&#128101;', color: 'blue' },
-    { label: 'System Uptime', value: '99.9%', icon: '&#9889;', color: 'green' },
-    { label: 'API Requests (24h)', value: '12.4K', icon: '&#128640;', color: 'purple' },
-    { label: 'Error Rate', value: '0.02%', icon: '&#128680;', color: 'red' },
+  const stats = [
+    { label: 'Total Users', value: userCounts.total || '0', icon: '&#128101;', bg: 'bg-blue-50 text-blue-500' },
+    { label: 'System Uptime', value: '99.9%', icon: '&#9889;', bg: 'bg-emerald-50 text-emerald-500' },
+    { label: 'API Requests', value: '12.4K', icon: '&#128640;', bg: 'bg-purple-50 text-purple-500' },
+    { label: 'Error Rate', value: '0.02%', icon: '&#128680;', bg: 'bg-red-50 text-red-500' },
   ];
 
-  const systemLogs = [
-    { message: 'Database backup completed successfully', level: 'success', time: '5 min ago' },
-    { message: 'New user registered: guard@secureguard.com', level: 'info', time: '12 min ago' },
-    { message: 'SSL certificate renewed for API endpoint', level: 'success', time: '1 hour ago' },
-    { message: 'Rate limit threshold reached for /api/reports', level: 'warning', time: '2 hours ago' },
-    { message: 'Scheduled maintenance window completed', level: 'info', time: '3 hours ago' },
-    { message: 'Failed login attempt from unknown IP', level: 'error', time: '4 hours ago' },
+  const logs = [
+    { msg: 'Database backup completed successfully', lvl: 'success', time: '5 min ago' },
+    { msg: 'New user registered: guard@secureguard.com', lvl: 'info', time: '12 min ago' },
+    { msg: 'SSL certificate renewed for API endpoint', lvl: 'success', time: '1 hour ago' },
+    { msg: 'Rate limit threshold reached for /api/reports', lvl: 'warning', time: '2 hours ago' },
+    { msg: 'Scheduled maintenance window completed', lvl: 'info', time: '3 hours ago' },
+    { msg: 'Failed login attempt from unknown IP', lvl: 'error', time: '4 hours ago' },
   ];
 
-  const serverMetrics = [
-    { name: 'CPU Usage', value: 23, color: 'green' },
-    { name: 'Memory Usage', value: 58, color: 'blue' },
-    { name: 'Disk Usage', value: 34, color: 'green' },
-    { name: 'Network I/O', value: 12, color: 'green' },
+  const lvlStyle = { success: 'bg-emerald-50 text-emerald-600', info: 'bg-blue-50 text-blue-600', warning: 'bg-amber-50 text-amber-600', error: 'bg-red-50 text-red-600' };
+
+  const metrics = [
+    { name: 'CPU Usage', value: 23 }, { name: 'Memory Usage', value: 58 },
+    { name: 'Disk Usage', value: 34 }, { name: 'Network I/O', value: 12 },
   ];
 
-  const smtpConfigured = settings.smtp_host && settings.smtp_user;
+  const distItems = [
+    { label: 'Developers', count: userCounts.developers, color: 'bg-pink-500' },
+    { label: 'Companies', count: userCounts.companies, color: 'bg-blue-500' },
+    { label: 'Clients', count: userCounts.clients, color: 'bg-amber-500' },
+    { label: 'Guards', count: userCounts.guards, color: 'bg-emerald-500' },
+  ];
+
+  const smtpOk = settings.smtp_host && settings.smtp_user;
 
   return (
-    <div className="dashboard developer-dashboard">
-      <div className="dashboard-header">
-        <h1>Developer Dashboard</h1>
-        <span className="role-tag developer">System Admin</span>
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-gray-800">Developer Dashboard</h1>
+        <span className="text-xs font-semibold bg-pink-50 text-pink-600 px-3 py-1 rounded-lg">System Admin</span>
       </div>
 
-      {/* Quick Settings Cards */}
-      <div className="quick-settings-grid">
-        <Link to="/settings" className="quick-setting-card">
-          <div className="qs-icon" style={{ background: '#e3f2fd' }}>&#127970;</div>
-          <div className="qs-info">
-            <h4>Company</h4>
-            <p>{settings.company_name}</p>
-          </div>
-          <span className="qs-arrow">&#8250;</span>
-        </Link>
-        <Link to="/settings" className="quick-setting-card">
-          <div className="qs-icon" style={{ background: '#f3e5f5' }}>&#127912;</div>
-          <div className="qs-info">
-            <h4>Theme</h4>
-            <div className="qs-colors">
-              <span className="qs-color-dot" style={{ background: settings.primary_color }} />
-              <span className="qs-color-dot" style={{ background: settings.accent_color }} />
-              <span className="qs-color-dot" style={{ background: settings.button_color }} />
+      {/* Quick Settings */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {[
+          { title: 'Company', sub: settings.company_name, icon: '&#127970;', bg: 'bg-blue-50' },
+          { title: 'Theme', sub: 'colors', icon: '&#127912;', bg: 'bg-purple-50', dots: [settings.primary_color, settings.accent_color, settings.button_color] },
+          { title: 'SMTP', sub: smtpOk ? settings.smtp_host : 'Not configured', icon: '&#128231;', bg: smtpOk ? 'bg-emerald-50' : 'bg-amber-50', ok: smtpOk },
+          { title: 'Users', sub: `${userCounts.total} registered`, icon: '&#128101;', bg: 'bg-emerald-50', link: '/users' },
+        ].map((c, i) => (
+          <Link to={c.link || '/settings'} key={i} className="flex items-center gap-3 bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md transition group">
+            <div className={`w-10 h-10 rounded-lg ${c.bg} flex items-center justify-center text-lg`} dangerouslySetInnerHTML={{ __html: c.icon }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-gray-400 uppercase font-semibold tracking-wider">{c.title}</p>
+              {c.dots ? (
+                <div className="flex gap-1 mt-1">{c.dots.map((cl, j) => <span key={j} className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ background: cl }} />)}</div>
+              ) : (
+                <p className={`text-sm font-medium truncate ${c.ok === false ? 'text-amber-500' : 'text-gray-700'}`}>{c.sub}</p>
+              )}
             </div>
-          </div>
-          <span className="qs-arrow">&#8250;</span>
-        </Link>
-        <Link to="/settings" className="quick-setting-card">
-          <div className="qs-icon" style={{ background: smtpConfigured ? '#e8f5e9' : '#fff3e0' }}>
-            &#128231;
-          </div>
-          <div className="qs-info">
-            <h4>SMTP</h4>
-            <p className={smtpConfigured ? 'configured' : 'not-configured'}>
-              {smtpConfigured ? `${settings.smtp_host}` : 'Not configured'}
-            </p>
-          </div>
-          <span className="qs-arrow">&#8250;</span>
-        </Link>
-        <Link to="/users" className="quick-setting-card">
-          <div className="qs-icon" style={{ background: '#e8f5e9' }}>&#128101;</div>
-          <div className="qs-info">
-            <h4>Users</h4>
-            <p>{userCounts.total} registered</p>
-          </div>
-          <span className="qs-arrow">&#8250;</span>
-        </Link>
+            <span className="text-gray-300 group-hover:text-gray-400 transition">&#8250;</span>
+          </Link>
+        ))}
       </div>
 
-      <div className="stats-grid">
-        {systemStats.map((stat, index) => (
-          <div className="stat-card" key={index}>
-            <div className={`stat-icon ${stat.color}`}>
-              <span dangerouslySetInnerHTML={{ __html: stat.icon }} />
-            </div>
-            <div className="stat-info">
-              <h3>{stat.value}</h3>
-              <p>{stat.label}</p>
-            </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {stats.map((s, i) => (
+          <div key={i} className="bg-white rounded-xl p-5 border border-gray-100 flex items-center gap-4 hover:shadow-sm transition">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${s.bg}`} dangerouslySetInnerHTML={{ __html: s.icon }} />
+            <div><p className="text-xl font-bold text-gray-800">{s.value}</p><p className="text-xs text-gray-400">{s.label}</p></div>
           </div>
         ))}
       </div>
 
-      <div className="dashboard-grid">
-        <div className="card">
-          <h2>&#128421; Server Health</h2>
-          <div className="metrics-list">
-            {serverMetrics.map((metric, index) => (
-              <div className="metric-item" key={index}>
-                <div className="metric-header">
-                  <span>{metric.name}</span>
-                  <span className="metric-value">{metric.value}%</span>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-6">
+        {/* Server Health */}
+        <div className="lg:col-span-3 bg-white rounded-xl p-6 border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 mb-5">Server Health</h2>
+          <div className="space-y-5">
+            {metrics.map((m, i) => (
+              <div key={i}>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-gray-500">{m.name}</span>
+                  <span className="font-semibold text-gray-700">{m.value}%</span>
                 </div>
-                <div className="metric-bar">
-                  <div
-                    className={`metric-bar-fill ${metric.color}`}
-                    style={{ width: `${metric.value}%` }}
-                  />
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${m.value > 50 ? 'bg-blue-500' : 'bg-emerald-500'}`} style={{ width: `${m.value}%` }} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="card">
-          <h2>&#128101; User Distribution</h2>
-          <div className="user-dist-list">
-            <div className="user-dist-item">
-              <span className="dist-dot developer" />
-              <span>Developers</span>
-              <span className="dist-count">{userCounts.developers}</span>
-            </div>
-            <div className="user-dist-item">
-              <span className="dist-dot company" />
-              <span>Companies</span>
-              <span className="dist-count">{userCounts.companies}</span>
-            </div>
-            <div className="user-dist-item">
-              <span className="dist-dot client" />
-              <span>Clients</span>
-              <span className="dist-count">{userCounts.clients}</span>
-            </div>
-            <div className="user-dist-item">
-              <span className="dist-dot guard" />
-              <span>Guards</span>
-              <span className="dist-count">{userCounts.guards}</span>
-            </div>
+        {/* User Distribution */}
+        <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700 mb-5">User Distribution</h2>
+          <div className="space-y-4">
+            {distItems.map((d, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className={`w-2.5 h-2.5 rounded-full ${d.color}`} />
+                <span className="text-sm text-gray-500 flex-1">{d.label}</span>
+                <span className="text-lg font-bold text-gray-800">{d.count}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: '20px' }}>
-        <h2>&#128220; System Logs</h2>
-        <div className="log-list">
-          {systemLogs.map((log, index) => (
-            <div className={`log-item ${log.level}`} key={index}>
-              <span className={`log-level ${log.level}`}>{log.level.toUpperCase()}</span>
-              <span className="log-message">{log.message}</span>
-              <span className="log-time">{log.time}</span>
+      {/* System Logs */}
+      <div className="bg-white rounded-xl p-6 border border-gray-100">
+        <h2 className="text-sm font-semibold text-gray-700 mb-4">System Logs</h2>
+        <div className="space-y-2">
+          {logs.map((l, i) => (
+            <div key={i} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-gray-50">
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${lvlStyle[l.lvl]}`}>{l.lvl}</span>
+              <span className="flex-1 text-sm text-gray-600">{l.msg}</span>
+              <span className="text-xs text-gray-300 whitespace-nowrap">{l.time}</span>
             </div>
           ))}
         </div>

@@ -4,20 +4,17 @@ import { supabase } from '../lib/supabase';
 
 function Settings() {
   const { settings, updateSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState('company');
+  const [tab, setTab] = useState('company');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  // Local form states
   const [companyName, setCompanyName] = useState(settings.company_name);
   const [logoUrl, setLogoUrl] = useState(settings.company_logo_url);
-
   const [primaryColor, setPrimaryColor] = useState(settings.primary_color);
   const [secondaryColor, setSecondaryColor] = useState(settings.secondary_color);
   const [accentColor, setAccentColor] = useState(settings.accent_color);
   const [buttonColor, setButtonColor] = useState(settings.button_color);
-
   const [smtpHost, setSmtpHost] = useState(settings.smtp_host);
   const [smtpPort, setSmtpPort] = useState(settings.smtp_port);
   const [smtpUser, setSmtpUser] = useState(settings.smtp_user);
@@ -26,486 +23,187 @@ function Settings() {
   const [smtpFromName, setSmtpFromName] = useState(settings.smtp_from_name);
   const [smtpSecure, setSmtpSecure] = useState(settings.smtp_secure);
 
-  async function handleSaveCompany() {
+  const flash = (msg) => { setSaved(msg); setTimeout(() => setSaved(''), 3000); };
+
+  const save = async (data) => {
     setSaving(true);
-    try {
-      await updateSettings({ company_name: companyName, company_logo_url: logoUrl });
-      showSaved('Company info saved!');
-    } catch (err) {
-      alert('Error saving: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
+    try { await updateSettings(data); flash('Saved!'); } catch (e) { alert('Error: ' + e.message); } finally { setSaving(false); }
+  };
 
-  async function handleSaveTheme() {
-    setSaving(true);
-    try {
-      await updateSettings({
-        primary_color: primaryColor,
-        secondary_color: secondaryColor,
-        accent_color: accentColor,
-        button_color: buttonColor,
-      });
-      showSaved('Theme saved!');
-    } catch (err) {
-      alert('Error saving: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleSaveSmtp() {
-    setSaving(true);
-    try {
-      await updateSettings({
-        smtp_host: smtpHost,
-        smtp_port: smtpPort,
-        smtp_user: smtpUser,
-        smtp_password: smtpPassword,
-        smtp_from_email: smtpFromEmail,
-        smtp_from_name: smtpFromName,
-        smtp_secure: smtpSecure,
-      });
-      showSaved('SMTP settings saved!');
-    } catch (err) {
-      alert('Error saving: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function showSaved(msg) {
-    setSaved(msg);
-    setTimeout(() => setSaved(''), 3000);
-  }
-
-  function handleResetTheme() {
-    setPrimaryColor('#1a1a2e');
-    setSecondaryColor('#16213e');
-    setAccentColor('#4fc3f7');
-    setButtonColor('#302b63');
-  }
-
-  async function handleLogoUpload(e) {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      alert('File size must be under 2MB');
-      return;
-    }
-
+    if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) { alert('Image under 2MB only'); return; }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const fileName = `company-logo-${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('logos')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('logos')
-        .getPublicUrl(fileName);
-
-      setLogoUrl(urlData.publicUrl);
-    } catch (err) {
-      alert('Upload failed: ' + err.message + '\n\nMake sure you have created a "logos" storage bucket in Supabase with public access.');
-    } finally {
-      setUploading(false);
-    }
-  }
+      const name = `logo-${Date.now()}.${file.name.split('.').pop()}`;
+      const { error } = await supabase.storage.from('logos').upload(name, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from('logos').getPublicUrl(name);
+      setLogoUrl(data.publicUrl);
+    } catch (e) { alert('Upload failed: ' + e.message); } finally { setUploading(false); }
+  };
 
   const tabs = [
     { id: 'company', label: 'Company Info', icon: '&#127970;' },
-    { id: 'theme', label: 'Theme & Colors', icon: '&#127912;' },
-    { id: 'smtp', label: 'SMTP / Email', icon: '&#128231;' },
+    { id: 'theme', label: 'Theme', icon: '&#127912;' },
+    { id: 'smtp', label: 'SMTP', icon: '&#128231;' },
   ];
 
+  const ColorField = ({ label, hint, value, onChange }) => (
+    <div>
+      <label className="block text-sm font-medium text-gray-600 mb-1.5">{label}</label>
+      <div className="flex items-center gap-2">
+        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5" />
+        <input type="text" value={value} onChange={e => onChange(e.target.value)} className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" />
+      </div>
+      <p className="text-xs text-gray-400 mt-1">{hint}</p>
+    </div>
+  );
+
   return (
-    <div className="settings-page">
-      <div className="page-header">
-        <h1>System Settings</h1>
-        {saved && <span className="save-toast">{saved}</span>}
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-gray-800">System Settings</h1>
+        {saved && <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">{saved}</span>}
       </div>
 
-      <div className="settings-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <span dangerouslySetInnerHTML={{ __html: tab.icon }} />
-            {tab.label}
+      {/* Tabs */}
+      <div className="flex gap-1 bg-white rounded-xl p-1 border border-gray-100 mb-6 w-fit">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition ${tab === t.id ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <span dangerouslySetInnerHTML={{ __html: t.icon }} />{t.label}
           </button>
         ))}
       </div>
 
-      <div className="settings-content">
-        {/* ==================== Company Info Tab ==================== */}
-        {activeTab === 'company' && (
-          <div className="settings-section">
-            <div className="settings-card">
-              <h2>Company Information</h2>
-              <p className="settings-desc">
-                Configure your company name and logo. These will appear across the entire application — login page, sidebar, and navbar.
-              </p>
-
-              <div className="settings-form">
-                <div className="settings-field">
-                  <label>Company Name</label>
-                  <input
-                    type="text"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="Enter company name"
-                  />
-                </div>
-
-                <div className="settings-field">
-                  <label>Company Logo</label>
-                  <div className="logo-upload-area">
-                    {logoUrl ? (
-                      <div className="logo-preview">
-                        <img src={logoUrl} alt="Company Logo" />
-                        <button
-                          className="logo-remove-btn"
-                          onClick={() => setLogoUrl('')}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="logo-placeholder">
-                        <span>&#128247;</span>
-                        <p>No logo uploaded</p>
-                      </div>
-                    )}
-                    <div className="logo-actions">
-                      <label className="upload-btn">
-                        {uploading ? 'Uploading...' : 'Upload Logo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                          disabled={uploading}
-                          hidden
-                        />
-                      </label>
-                      <span className="upload-hint">or</span>
-                      <input
-                        type="url"
-                        value={logoUrl}
-                        onChange={(e) => setLogoUrl(e.target.value)}
-                        placeholder="Paste image URL"
-                        className="logo-url-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  className="save-btn"
-                  onClick={handleSaveCompany}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Company Info'}
-                </button>
+      {/* Company */}
+      {tab === 'company' && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 bg-white rounded-xl p-6 border border-gray-100">
+            <h2 className="font-semibold text-gray-800 mb-1">Company Information</h2>
+            <p className="text-sm text-gray-400 mb-6">Appears on login page, sidebar, and navbar.</p>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Company Name</label>
+                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Logo</label>
+                {logoUrl && <div className="flex items-center gap-3 mb-3"><img src={logoUrl} alt="Logo" className="w-16 h-16 rounded-xl border border-gray-200 object-contain p-1" /><button onClick={() => setLogoUrl('')} className="text-xs text-red-500 hover:text-red-600">Remove</button></div>}
+                <div className="flex items-center gap-3">
+                  <label className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg cursor-pointer hover:bg-indigo-700 transition">{uploading ? 'Uploading...' : 'Upload'}<input type="file" accept="image/*" onChange={handleLogoUpload} hidden disabled={uploading} /></label>
+                  <span className="text-xs text-gray-400">or</span>
+                  <input type="url" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="Paste URL" className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                </div>
+              </div>
+              <button onClick={() => save({ company_name: companyName, company_logo_url: logoUrl })} disabled={saving} className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">{saving ? 'Saving...' : 'Save'}</button>
             </div>
-
-            <div className="settings-card preview-card">
-              <h2>Preview</h2>
-              <div className="company-preview">
-                <div className="preview-sidebar">
-                  <div className="preview-sidebar-header">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt="Logo" className="preview-logo" />
-                    ) : (
-                      <span className="preview-shield">&#128737;</span>
-                    )}
-                    <span className="preview-name">{companyName || 'Company Name'}</span>
-                  </div>
-                  <div className="preview-nav-items">
-                    <div className="preview-nav-item active">Dashboard</div>
-                    <div className="preview-nav-item">Guards</div>
-                    <div className="preview-nav-item">Schedule</div>
-                  </div>
+          </div>
+          <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-gray-100 self-start">
+            <h2 className="font-semibold text-gray-800 mb-4">Preview</h2>
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 p-4 border-b border-gray-200">
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
+                  {logoUrl ? <img src={logoUrl} alt="" className="w-6 h-6 rounded" /> : <span>&#128737;</span>}
+                  <span className="text-sm font-semibold text-gray-700">{companyName || 'Company'}</span>
+                </div>
+                <div className="space-y-1">
+                  {['Dashboard', 'Guards', 'Schedule'].map((n, i) => (
+                    <div key={n} className={`text-xs px-3 py-1.5 rounded ${i === 0 ? 'bg-indigo-100 text-indigo-600 font-medium' : 'text-gray-400'}`}>{n}</div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ==================== Theme Tab ==================== */}
-        {activeTab === 'theme' && (
-          <div className="settings-section">
-            <div className="settings-card">
-              <h2>Theme & Appearance</h2>
-              <p className="settings-desc">
-                Customize the color scheme. Changes apply to sidebar, buttons, login page, and accent highlights.
-              </p>
-
-              <div className="settings-form">
-                <div className="color-grid">
-                  <div className="color-field">
-                    <label>Sidebar Primary</label>
-                    <div className="color-input-wrapper">
-                      <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="color-text"
-                      />
-                    </div>
-                    <span className="color-hint">Sidebar top, main background</span>
-                  </div>
-
-                  <div className="color-field">
-                    <label>Sidebar Secondary</label>
-                    <div className="color-input-wrapper">
-                      <input
-                        type="color"
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                        className="color-text"
-                      />
-                    </div>
-                    <span className="color-hint">Sidebar bottom gradient</span>
-                  </div>
-
-                  <div className="color-field">
-                    <label>Accent Color</label>
-                    <div className="color-input-wrapper">
-                      <input
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="color-text"
-                      />
-                    </div>
-                    <span className="color-hint">Active nav item highlight</span>
-                  </div>
-
-                  <div className="color-field">
-                    <label>Button Color</label>
-                    <div className="color-input-wrapper">
-                      <input
-                        type="color"
-                        value={buttonColor}
-                        onChange={(e) => setButtonColor(e.target.value)}
-                      />
-                      <input
-                        type="text"
-                        value={buttonColor}
-                        onChange={(e) => setButtonColor(e.target.value)}
-                        className="color-text"
-                      />
-                    </div>
-                    <span className="color-hint">Buttons, login gradient</span>
-                  </div>
+      {/* Theme */}
+      {tab === 'theme' && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 bg-white rounded-xl p-6 border border-gray-100">
+            <h2 className="font-semibold text-gray-800 mb-1">Theme & Appearance</h2>
+            <p className="text-sm text-gray-400 mb-6">Customize sidebar, buttons, and accents.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+              <ColorField label="Sidebar Primary" hint="Top gradient" value={primaryColor} onChange={setPrimaryColor} />
+              <ColorField label="Sidebar Secondary" hint="Bottom gradient" value={secondaryColor} onChange={setSecondaryColor} />
+              <ColorField label="Accent Color" hint="Active highlights" value={accentColor} onChange={setAccentColor} />
+              <ColorField label="Button Color" hint="Buttons, login" value={buttonColor} onChange={setButtonColor} />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => save({ primary_color: primaryColor, secondary_color: secondaryColor, accent_color: accentColor, button_color: buttonColor })} disabled={saving} className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">{saving ? 'Saving...' : 'Save Theme'}</button>
+              <button onClick={() => { setPrimaryColor('#1a1a2e'); setSecondaryColor('#16213e'); setAccentColor('#4fc3f7'); setButtonColor('#302b63'); }} className="px-5 py-2.5 bg-gray-100 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-200 transition">Reset</button>
+            </div>
+          </div>
+          <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-gray-100 self-start">
+            <h2 className="font-semibold text-gray-800 mb-4">Live Preview</h2>
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="p-4" style={{ background: `linear-gradient(180deg, ${primaryColor}, ${secondaryColor})` }}>
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/10">
+                  <span className="text-white">&#128737;</span>
+                  <span className="text-sm font-semibold text-white">{settings.company_name}</span>
                 </div>
-
-                <div className="theme-actions">
-                  <button
-                    className="save-btn"
-                    onClick={handleSaveTheme}
-                    disabled={saving}
-                  >
-                    {saving ? 'Saving...' : 'Save Theme'}
-                  </button>
-                  <button className="reset-btn" onClick={handleResetTheme}>
-                    Reset to Default
-                  </button>
+                <div className="space-y-1">
+                  <div className="text-xs px-3 py-1.5 rounded bg-white/10 text-white border-l-2" style={{ borderLeftColor: accentColor }}>Dashboard</div>
+                  <div className="text-xs px-3 py-1.5 text-white/50">Guards</div>
                 </div>
               </div>
-            </div>
-
-            <div className="settings-card preview-card">
-              <h2>Live Preview</h2>
-              <div className="theme-preview">
-                <div
-                  className="preview-sidebar"
-                  style={{
-                    background: `linear-gradient(180deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                  }}
-                >
-                  <div className="preview-sidebar-header">
-                    <span className="preview-shield">&#128737;</span>
-                    <span className="preview-name">{settings.company_name}</span>
-                  </div>
-                  <div className="preview-nav-items">
-                    <div
-                      className="preview-nav-item active"
-                      style={{ borderLeftColor: accentColor }}
-                    >
-                      Dashboard
-                    </div>
-                    <div className="preview-nav-item">Guards</div>
-                    <div className="preview-nav-item">Schedule</div>
-                  </div>
-                </div>
-                <div className="preview-main">
-                  <button
-                    className="preview-button"
-                    style={{ background: buttonColor }}
-                  >
-                    Sample Button
-                  </button>
-                  <div
-                    className="preview-accent-bar"
-                    style={{ background: accentColor }}
-                  />
-                </div>
+              <div className="p-4 bg-gray-50 flex items-center gap-3">
+                <button className="text-xs px-4 py-1.5 text-white rounded" style={{ background: buttonColor }}>Button</button>
+                <div className="flex-1 h-1.5 rounded-full" style={{ background: accentColor }} />
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ==================== SMTP Tab ==================== */}
-        {activeTab === 'smtp' && (
-          <div className="settings-section smtp-section">
-            <div className="settings-card full-width">
-              <h2>SMTP / Email Configuration</h2>
-              <p className="settings-desc">
-                Configure email server settings for sending notifications, alerts, and reports.
-                Supports Gmail, SendGrid, Mailgun, Amazon SES, and any custom SMTP server.
-              </p>
-
-              <div className="settings-form">
-                <div className="smtp-grid">
-                  <div className="settings-field">
-                    <label>SMTP Host</label>
-                    <input
-                      type="text"
-                      value={smtpHost}
-                      onChange={(e) => setSmtpHost(e.target.value)}
-                      placeholder="smtp.gmail.com"
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label>SMTP Port</label>
-                    <input
-                      type="number"
-                      value={smtpPort}
-                      onChange={(e) => setSmtpPort(parseInt(e.target.value) || 587)}
-                      placeholder="587"
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label>Username / Email</label>
-                    <input
-                      type="text"
-                      value={smtpUser}
-                      onChange={(e) => setSmtpUser(e.target.value)}
-                      placeholder="your-email@gmail.com"
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label>Password / App Key</label>
-                    <input
-                      type="password"
-                      value={smtpPassword}
-                      onChange={(e) => setSmtpPassword(e.target.value)}
-                      placeholder="App-specific password"
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label>From Email</label>
-                    <input
-                      type="email"
-                      value={smtpFromEmail}
-                      onChange={(e) => setSmtpFromEmail(e.target.value)}
-                      placeholder="noreply@yourcompany.com"
-                    />
-                  </div>
-                  <div className="settings-field">
-                    <label>From Name</label>
-                    <input
-                      type="text"
-                      value={smtpFromName}
-                      onChange={(e) => setSmtpFromName(e.target.value)}
-                      placeholder="SecureGuard Notifications"
-                    />
-                  </div>
-                </div>
-
-                <div className="settings-field toggle-field">
-                  <label className="toggle-label">
-                    <span>Use TLS/SSL (Secure Connection)</span>
-                    <div
-                      className={`toggle ${smtpSecure ? 'on' : ''}`}
-                      onClick={() => setSmtpSecure(!smtpSecure)}
-                    >
-                      <div className="toggle-knob" />
-                    </div>
-                  </label>
-                </div>
-
-                <div className="smtp-presets">
-                  <span className="presets-label">Quick Presets:</span>
-                  <button
-                    className="preset-btn"
-                    onClick={() => { setSmtpHost('smtp.gmail.com'); setSmtpPort(587); setSmtpSecure(true); }}
-                  >
-                    Gmail
-                  </button>
-                  <button
-                    className="preset-btn"
-                    onClick={() => { setSmtpHost('smtp.sendgrid.net'); setSmtpPort(587); setSmtpSecure(true); setSmtpUser('apikey'); }}
-                  >
-                    SendGrid
-                  </button>
-                  <button
-                    className="preset-btn"
-                    onClick={() => { setSmtpHost('smtp.mailgun.org'); setSmtpPort(587); setSmtpSecure(true); }}
-                  >
-                    Mailgun
-                  </button>
-                  <button
-                    className="preset-btn"
-                    onClick={() => { setSmtpHost('email-smtp.us-east-1.amazonaws.com'); setSmtpPort(587); setSmtpSecure(true); }}
-                  >
-                    Amazon SES
-                  </button>
-                </div>
-
-                <button
-                  className="save-btn"
-                  onClick={handleSaveSmtp}
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save SMTP Settings'}
-                </button>
+      {/* SMTP */}
+      {tab === 'smtp' && (
+        <div className="bg-white rounded-xl p-6 border border-gray-100 max-w-3xl">
+          <h2 className="font-semibold text-gray-800 mb-1">SMTP / Email Configuration</h2>
+          <p className="text-sm text-gray-400 mb-6">Configure email for notifications and alerts.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+            {[
+              { label: 'SMTP Host', value: smtpHost, set: setSmtpHost, ph: 'smtp.gmail.com' },
+              { label: 'Port', value: smtpPort, set: (v) => setSmtpPort(parseInt(v) || 587), ph: '587', type: 'number' },
+              { label: 'Username', value: smtpUser, set: setSmtpUser, ph: 'your-email@gmail.com' },
+              { label: 'Password', value: smtpPassword, set: setSmtpPassword, ph: 'App password', type: 'password' },
+              { label: 'From Email', value: smtpFromEmail, set: setSmtpFromEmail, ph: 'noreply@company.com' },
+              { label: 'From Name', value: smtpFromName, set: setSmtpFromName, ph: 'SecureGuard' },
+            ].map((f, i) => (
+              <div key={i}>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">{f.label}</label>
+                <input type={f.type || 'text'} value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
-            </div>
+            ))}
           </div>
-        )}
-      </div>
+
+          <div className="flex items-center justify-between mb-5 py-3">
+            <span className="text-sm text-gray-600">Use TLS/SSL</span>
+            <button onClick={() => setSmtpSecure(!smtpSecure)} className={`w-11 h-6 rounded-full relative transition ${smtpSecure ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full shadow absolute top-0.5 transition-transform ${smtpSecure ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            <span className="text-sm text-gray-400">Presets:</span>
+            {[
+              { label: 'Gmail', host: 'smtp.gmail.com', port: 587 },
+              { label: 'SendGrid', host: 'smtp.sendgrid.net', port: 587, user: 'apikey' },
+              { label: 'Mailgun', host: 'smtp.mailgun.org', port: 587 },
+              { label: 'SES', host: 'email-smtp.us-east-1.amazonaws.com', port: 587 },
+            ].map(p => (
+              <button key={p.label} onClick={() => { setSmtpHost(p.host); setSmtpPort(p.port); setSmtpSecure(true); if (p.user) setSmtpUser(p.user); }}
+                className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition">{p.label}</button>
+            ))}
+          </div>
+
+          <button onClick={() => save({ smtp_host: smtpHost, smtp_port: smtpPort, smtp_user: smtpUser, smtp_password: smtpPassword, smtp_from_email: smtpFromEmail, smtp_from_name: smtpFromName, smtp_secure: smtpSecure })} disabled={saving}
+            className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">{saving ? 'Saving...' : 'Save SMTP'}</button>
+        </div>
+      )}
     </div>
   );
 }
