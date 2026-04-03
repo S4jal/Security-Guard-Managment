@@ -317,7 +317,7 @@ function GuardDashboard() {
             <div className="space-y-2">
               {checkpoints.map((c, i) => (
                 <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg ${c.done ? 'bg-emerald-50' : 'bg-gray-50'}`}>
-                  <span className="text-base">{c.done ? '&#9989;' : '&#9723;'}</span>
+                  <span className="text-base" dangerouslySetInnerHTML={{ __html: c.done ? '&#9989;' : '&#9723;' }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-600 font-medium">{c.name}</p>
                     <p className="text-xs text-gray-400">Due: {c.time}</p>
