@@ -6,7 +6,6 @@ import Login from './pages/Login';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import ClientDashboard from './pages/ClientDashboard';
-// GuardDashboard replaced by CommandCenter
 import Guards from './pages/Guards';
 import Schedule from './pages/Schedule';
 import Reports from './pages/Reports';
@@ -20,6 +19,15 @@ import Settings from './pages/Settings';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import './App.css';
+
+function PlaceholderPage({ title }) {
+  return (
+    <div style={{ padding: 32 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: '#111', marginBottom: 8 }}>{title}</h1>
+      <p style={{ fontSize: 14, color: '#999' }}>This section is under development.</p>
+    </div>
+  );
+}
 
 function getDashboardByRole(role) {
   switch (role) {
@@ -81,9 +89,12 @@ function AppContent() {
               )}
               {(role === 'guard' || !role) && (
                 <>
-                  <Route path="/my-schedule" element={<Schedule />} />
+                  <Route path="/attendance-history" element={<Attendance />} />
+                  <Route path="/time-card" element={<Attendance />} />
+                  <Route path="/day-off" element={<PlaceholderPage title="Day Off Request" />} />
+                  <Route path="/daily-report" element={<PlaceholderPage title="Daily Activity Report" />} />
+                  <Route path="/condition-reports" element={<PlaceholderPage title="Condition Reports" />} />
                   <Route path="/patrol" element={<PatrolLog />} />
-                  <Route path="/attendance" element={<Attendance />} />
                 </>
               )}
               <Route path="*" element={<Navigate to="/" />} />
