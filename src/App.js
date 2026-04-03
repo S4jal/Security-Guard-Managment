@@ -26,8 +26,8 @@ function getDashboardByRole(role) {
     case 'developer': return <DeveloperDashboard />;
     case 'company': return <CompanyDashboard />;
     case 'client': return <ClientDashboard />;
-    case 'guard': return <GuardDashboard />;
-    default: return <GuardDashboard />;
+    case 'guard': return <CommandCenter />;
+    default: return <CommandCenter />;
   }
 }
 
@@ -81,7 +81,6 @@ function AppContent() {
               )}
               {(role === 'guard' || !role) && (
                 <>
-                  <Route path="/command-center" element={<CommandCenter />} />
                   <Route path="/my-schedule" element={<Schedule />} />
                   <Route path="/patrol" element={<PatrolLog />} />
                   <Route path="/attendance" element={<Attendance />} />

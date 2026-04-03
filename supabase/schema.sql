@@ -47,6 +47,10 @@ create table if not exists public.time_entries (
   post text default '',
   break_start timestamptz,
   break_total_seconds int default 0,
+  clock_in_lat double precision,
+  clock_in_lng double precision,
+  clock_out_lat double precision,
+  clock_out_lng double precision,
   note text default '',
   created_at timestamptz default now()
 );
@@ -56,6 +60,10 @@ do $$ begin
   alter table public.time_entries add column if not exists post text default '';
   alter table public.time_entries add column if not exists break_start timestamptz;
   alter table public.time_entries add column if not exists break_total_seconds int default 0;
+  alter table public.time_entries add column if not exists clock_in_lat double precision;
+  alter table public.time_entries add column if not exists clock_in_lng double precision;
+  alter table public.time_entries add column if not exists clock_out_lat double precision;
+  alter table public.time_entries add column if not exists clock_out_lng double precision;
 exception when others then null;
 end $$;
 
