@@ -60,8 +60,11 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('Sign out error:', e);
+    }
     setUser(null);
     setProfile(null);
   }
