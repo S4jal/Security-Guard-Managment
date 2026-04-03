@@ -15,6 +15,7 @@ import Clients from './pages/Clients';
 import Incidents from './pages/Incidents';
 import PatrolLog from './pages/PatrolLog';
 import Attendance from './pages/Attendance';
+import CommandCenter from './pages/CommandCenter';
 import Settings from './pages/Settings';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -80,6 +81,7 @@ function AppContent() {
               )}
               {(role === 'guard' || !role) && (
                 <>
+                  <Route path="/command-center" element={<CommandCenter />} />
                   <Route path="/my-schedule" element={<Schedule />} />
                   <Route path="/patrol" element={<PatrolLog />} />
                   <Route path="/attendance" element={<Attendance />} />

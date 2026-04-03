@@ -38,11 +38,33 @@ create table if not exists public.app_settings (
 -- Insert default settings row
 insert into public.app_settings (id) values (1) on conflict (id) do nothing;
 
--- 3. Enable Row Level Security
+-- 3. Create time_entries table (Clock In / Clock Out / Breaks)
+create table if not exists public.time_entries (
+  id uuid primary key default gen_random_uuid(),
+  guard_id uuid references public.profiles(id) on delete cascade not null,
+  clock_in timestamptz not null default now(),
+  clock_out timestamptz,
+  post text default '',
+  break_start timestamptz,
+  break_total_seconds int default 0,
+  note text default '',
+  created_at timestamptz default now()
+);
+
+-- Add columns if table already exists (safe to run multiple times)
+do $$ begin
+  alter table public.time_entries add column if not exists post text default '';
+  alter table public.time_entries add column if not exists break_start timestamptz;
+  alter table public.time_entries add column if not exists break_total_seconds int default 0;
+exception when others then null;
+end $$;
+
+-- 4. Enable Row Level Security
 alter table public.profiles enable row level security;
 alter table public.app_settings enable row level security;
+alter table public.time_entries enable row level security;
 
--- 4. RLS Policies - Profiles (drop first, then create)
+-- 5. RLS Policies - Profiles (drop first, then create)
 
 drop policy if exists "Profiles are viewable by authenticated users" on public.profiles;
 create policy "Profiles are viewable by authenticated users"
@@ -78,7 +100,7 @@ create policy "Developers can delete profiles"
     )
   );
 
--- 5. RLS Policies - App Settings (drop first, then create)
+-- 6. RLS Policies - App Settings (drop first, then create)
 
 drop policy if exists "App settings are viewable by everyone" on public.app_settings;
 create policy "App settings are viewable by everyone"
@@ -107,7 +129,38 @@ create policy "Developers can insert app settings"
     )
   );
 
--- 6. Auto-create profile on signup
+-- 7. RLS Policies - Time Entries
+
+drop policy if exists "Guards can view own time entries" on public.time_entries;
+create policy "Guards can view own time entries"
+  on public.time_entries for select
+  to authenticated
+  using (guard_id = auth.uid());
+
+drop policy if exists "Guards can insert own time entries" on public.time_entries;
+create policy "Guards can insert own time entries"
+  on public.time_entries for insert
+  to authenticated
+  with check (guard_id = auth.uid());
+
+drop policy if exists "Guards can update own time entries" on public.time_entries;
+create policy "Guards can update own time entries"
+  on public.time_entries for update
+  to authenticated
+  using (guard_id = auth.uid());
+
+drop policy if exists "Developers and company can view all time entries" on public.time_entries;
+create policy "Developers and company can view all time entries"
+  on public.time_entries for select
+  to authenticated
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role in ('developer', 'company')
+    )
+  );
+
+-- 8. Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -130,7 +183,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 7. Auto-update updated_at
+-- 9. Auto-update updated_at
 create or replace function public.handle_updated_at()
 returns trigger
 language plpgsql

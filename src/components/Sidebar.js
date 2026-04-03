@@ -26,6 +26,7 @@ const navConfig = {
   ],
   guard: [
     { path: '/', label: 'Dashboard', icon: '&#128200;' },
+    { path: '/command-center', label: 'Command Center', icon: '&#127919;' },
     { path: '/my-schedule', label: 'My Schedule', icon: '&#128197;' },
     { path: '/patrol', label: 'Patrol Log', icon: '&#128206;' },
     { path: '/attendance', label: 'Attendance', icon: '&#9989;' },
