@@ -6,7 +6,7 @@ import Login from './pages/Login';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import ClientDashboard from './pages/ClientDashboard';
-import GuardDashboard from './pages/GuardDashboard';
+// GuardDashboard replaced by CommandCenter
 import Guards from './pages/Guards';
 import Schedule from './pages/Schedule';
 import Reports from './pages/Reports';
