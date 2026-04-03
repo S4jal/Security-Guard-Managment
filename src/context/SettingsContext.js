@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const defaultSettings = {
   company_name: 'SecureGuard Pro',
@@ -38,6 +38,12 @@ export function SettingsProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      applyTheme(defaultSettings);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('app_settings')
