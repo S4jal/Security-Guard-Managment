@@ -1,6 +1,6 @@
 -- ============================================
 -- SecureGuard Pro - Database Schema
--- Run this in your Supabase SQL Editor
+-- Safe to run multiple times (idempotent)
 -- ============================================
 
 -- 1. Create profiles table
@@ -42,18 +42,21 @@ insert into public.app_settings (id) values (1) on conflict (id) do nothing;
 alter table public.profiles enable row level security;
 alter table public.app_settings enable row level security;
 
--- 4. RLS Policies - Profiles
+-- 4. RLS Policies - Profiles (drop first, then create)
 
+drop policy if exists "Profiles are viewable by authenticated users" on public.profiles;
 create policy "Profiles are viewable by authenticated users"
   on public.profiles for select
   to authenticated
   using (true);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update
   to authenticated
   using (auth.uid() = id);
 
+drop policy if exists "Developers can insert profiles" on public.profiles;
 create policy "Developers can insert profiles"
   on public.profiles for insert
   to authenticated
@@ -64,6 +67,7 @@ create policy "Developers can insert profiles"
     )
   );
 
+drop policy if exists "Developers can delete profiles" on public.profiles;
 create policy "Developers can delete profiles"
   on public.profiles for delete
   to authenticated
@@ -74,14 +78,14 @@ create policy "Developers can delete profiles"
     )
   );
 
--- 5. RLS Policies - App Settings
+-- 5. RLS Policies - App Settings (drop first, then create)
 
--- Everyone can read settings (needed for theme, company name on login)
+drop policy if exists "App settings are viewable by everyone" on public.app_settings;
 create policy "App settings are viewable by everyone"
   on public.app_settings for select
   using (true);
 
--- Only developers can update settings
+drop policy if exists "Developers can update app settings" on public.app_settings;
 create policy "Developers can update app settings"
   on public.app_settings for update
   to authenticated
@@ -92,7 +96,7 @@ create policy "Developers can update app settings"
     )
   );
 
--- Allow upsert for developers
+drop policy if exists "Developers can insert app settings" on public.app_settings;
 create policy "Developers can insert app settings"
   on public.app_settings for insert
   to authenticated
